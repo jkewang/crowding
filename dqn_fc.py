@@ -13,7 +13,7 @@ LEARNING_STEP_COUNTER = 0
 global MEMORY_COUNTER
 MEMORY_COUNTER = 0
 
-N_ACTIONS = 4
+N_ACTIONS = 5
 N_SLIDING = 280
 N_OTHERS = 12*10
 N_STATES = N_SLIDING + N_OTHERS
@@ -123,8 +123,7 @@ def choose_action(s_sliding, s_others):
     if np.random.uniform() < EPSILON:
         #zhongjian = sess.run(myreal_input, feed_dict={tf_s_sliding: s_sliding, tf_s_others: s_others})
         #print(zhongjian)
-        actions_value = sess.run(q, feed_dict={tf_s_sliding: s_sliding, tf_s_others: s_others})
-        print(actions_value)
+        actions_value = sess.run(q, feed_dict={tf_s_sliding: s_sliding, tf_s_others: s_others})[0]
         #action = np.argmax(actions_value)
     else:
         actions_value = [np.random.rand() for nn in range(5)]

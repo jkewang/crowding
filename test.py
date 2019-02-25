@@ -5,6 +5,17 @@ import dqn_fc as bt
 import numpy as np
 import logging
 
+def mask(actions_value):
+    q_mask = [0, 0, 0, 0, 0]
+    if s_others[3] == 0:
+        q_mask[2] -= 1000
+    if s_others[4] == 0:
+        q_mask[3] -= 1000
+
+    actions_value_mask = q_mask + actions_value
+
+    return actions_value_mask
+
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
 handler = logging.FileHandler("log.txt")
@@ -12,7 +23,7 @@ handler.setLevel(logging.INFO)
 logger.addHandler(handler)
 
 my_env = env.TrafficEnv()
-bt.saver.restore(bt.sess,"./model/my-model.ckpt-13600")
+bt.saver.restore(bt.sess,"./model/my-model.ckpt-2000")
 f = open("./logger.txt",'w')
 bt.EPSILON = 0.9999
 
@@ -32,7 +43,10 @@ for i_episode in range(1000000):
     ep_r = 0
 
     while True:
-        action = bt.choose_action(s_sliding, s_others)
+        actions_value = bt.choose_action(s_sliding, s_others)
+        actions_value_mask = mask(actions_value)
+        action = np.argmax(actions_value_mask)
+
         print("now_action",int(action))
         s, r, is_done, dist = my_env.step(action)
 
@@ -48,6 +62,7 @@ for i_episode in range(1000000):
         s_sliding = s_sliding_
         s_others = s_others_
 
+        print(s_others[3], s_others[4])
         log = str(s_others)
         #print(log)
 

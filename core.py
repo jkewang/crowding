@@ -6,13 +6,16 @@ import numpy as np
 import logging
 
 def mask(actions_value):
+    print(s_others[3],s_others[4])
     q_mask = [0, 0, 0, 0, 0]
     if s_others[3] == 0:
-        q_mask[2] -= 1000
-    if s_others[4] == 0:
         q_mask[3] -= 1000
+    if s_others[4] == 0:
+        q_mask[2] -= 1000
 
-    actions_value_mask = q_mask + actions_value
+    actions_value_mask = [0,0,0,0,0]
+    for i in range(len(actions_value)):
+        actions_value_mask[i] = actions_value[i] + q_mask[i]
 
     return actions_value_mask
 
@@ -45,7 +48,8 @@ for i_episode in range(1000000):
         actions_value = bt.choose_action(s_sliding, s_others)
         actions_value_mask = mask(actions_value)
         action = np.argmax(actions_value_mask)
-
+        print(actions_value)
+        print(actions_value_mask)
         print(mydict[action])
 
         # print("now_action",int(action))
@@ -65,8 +69,8 @@ for i_episode in range(1000000):
         k += 1
         ep_r += r
 
-        if (bt.EPSILON < 0.9999):
-            bt.EPSILON += 0.00005
+        if (bt.EPSILON < 0.95):
+            bt.EPSILON += 0.00001
         if (bt.MEMORY_COUNTER > bt.MEMORY_CAPACITY):
             bt.learn()
             if is_done:

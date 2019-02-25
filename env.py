@@ -42,8 +42,8 @@ class TrafficEnv(object):
         self.AgentX = 0
         self.AgentY = 0
         self.AgentSpeed = 10
-        self.AgentAccRate = 1.0
-        self.AgentDecRate = 1.0
+        self.AgentAccRate = 100
+        self.AgentDecRate = 300
         self.minLaneNumber = 0
         self.maxLaneNumber = 1
         self.oldDistance = 0
@@ -159,7 +159,7 @@ class TrafficEnv(object):
             return -30
         elif is_collision == 100:
             print("arrive!")
-            return 100
+            return 500
         else:
             self.nowDistance = traci.vehicle.getDistance(self.AgentId)
             del_distance = self.nowDistance - self.oldDistance
