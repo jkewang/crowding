@@ -125,10 +125,11 @@ def choose_action(s_sliding, s_others):
         #print(zhongjian)
         actions_value = sess.run(q, feed_dict={tf_s_sliding: s_sliding, tf_s_others: s_others})
         print(actions_value)
-        action = np.argmax(actions_value)
+        #action = np.argmax(actions_value)
     else:
-        action = np.random.randint(0, N_ACTIONS)
-    return action
+        actions_value = [np.random.rand() for nn in range(5)]
+        #action = np.random.randint(0, N_ACTIONS)
+    return actions_value
 
 
 def store_transition(s_sliding, s_others, a, r, s_sliding_, s_others_, done):

@@ -5,6 +5,17 @@ import dqn_fc as bt
 import numpy as np
 import logging
 
+def mask(actions_value):
+    q_mask = [0, 0, 0, 0, 0]
+    if s_others[3] == 0:
+        q_mask[2] -= 1000
+    if s_others[4] == 0:
+        q_mask[3] -= 1000
+
+    actions_value_mask = q_mask + actions_value
+
+    return actions_value_mask
+
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
 handler = logging.FileHandler("log.txt")
@@ -31,8 +42,10 @@ for i_episode in range(1000000):
     ep_r = 0
     mydict = ["go","stop","left","right","nothing"]
     while True:
-        action = bt.choose_action(s_sliding, s_others)
-        #action = 0
+        actions_value = bt.choose_action(s_sliding, s_others)
+        actions_value_mask = mask(actions_value)
+        action = np.argmax(actions_value_mask)
+
         print(mydict[action])
 
         # print("now_action",int(action))

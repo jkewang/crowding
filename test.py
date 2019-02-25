@@ -12,7 +12,7 @@ handler.setLevel(logging.INFO)
 logger.addHandler(handler)
 
 my_env = env.TrafficEnv()
-bt.saver.restore(bt.sess,"./model/my-model.ckpt-1000")
+bt.saver.restore(bt.sess,"./model/my-model.ckpt-13600")
 f = open("./logger.txt",'w')
 bt.EPSILON = 0.9999
 
