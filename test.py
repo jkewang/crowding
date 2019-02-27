@@ -8,9 +8,9 @@ import logging
 def mask(actions_value):
     q_mask = [0, 0, 0, 0, 0]
     if s_others[3] == 0:
-        q_mask[2] -= 1000
-    if s_others[4] == 0:
         q_mask[3] -= 1000
+    if s_others[4] == 0:
+        q_mask[2] -= 1000
 
     actions_value_mask = q_mask + actions_value
 
@@ -23,7 +23,7 @@ handler.setLevel(logging.INFO)
 logger.addHandler(handler)
 
 my_env = env.TrafficEnv()
-bt.saver.restore(bt.sess,"./model/my-model.ckpt-2000")
+bt.saver.restore(bt.sess,"./model/my-model.ckpt-30000")
 f = open("./logger.txt",'w')
 bt.EPSILON = 0.9999
 

@@ -1,4 +1,6 @@
 import os,sys
+import change_trip
+
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'],'tools')
     sys.path.append(tools)
@@ -14,6 +16,8 @@ import traci
 import traci.constants as tc
 import math
 import numpy as np
+
+DEAD_LINE = 300
 
 class TrafficEnv(object):
 
@@ -48,6 +52,7 @@ class TrafficEnv(object):
         self.maxLaneNumber = 1
         self.oldDistance = 0
         self.nowDistance = 0
+        self.steptime = 0
 
     def reset(self):
         self.end = 0
@@ -58,6 +63,9 @@ class TrafficEnv(object):
         self.x_v = 0
         self.y_v = 0
         self.is_in = 0
+        self.steptime = 0
+
+        change_trip.change()
 
         traci.load(["-c",config_path,"--collision.action","remove","--no-step-log","--no-warnings","--no-duration-log"])
         print("Resetting...")
@@ -128,10 +136,11 @@ class TrafficEnv(object):
                 traci.vehicle.setSpeed(self.AgentId,traci.vehicle.getSubscriptionResults(self.AgentId)[tc.VAR_SPEED])
 
         traci.simulationStep()
+        self.steptime += 1
         self.VehicleIds = traci.vehicle.getIDList()
 
         if self.is_in == 1:
-            if self.AgentId in self.VehicleIds:
+            if self.AgentId in self.VehicleIds and self.steptime < DEAD_LINE:
                 for vehId in self.VehicleIds:
                     traci.vehicle.subscribe(vehId,(tc.VAR_SPEED,tc.VAR_POSITION,tc.VAR_LANE_INDEX,tc.VAR_DISTANCE))
                     traci.vehicle.subscribeLeader(self.AgentId,50)
@@ -144,10 +153,14 @@ class TrafficEnv(object):
 
                 self.state,breakstop = self.perception()
                 reward = self.cal_reward(self.end,breakstop)
-            else:
+            elif self.steptime < DEAD_LINE:
                 #self.state = self.perception()
                 self.end = 1
                 reward = self.cal_reward(is_collision=self.end,breakstop=0)
+                DistanceTravelled = 0
+            else:
+                self.end = 1
+                reward = self.cal_reward(is_collision=2, breakstop=0)
                 DistanceTravelled = 0
 
 
@@ -156,14 +169,17 @@ class TrafficEnv(object):
     def cal_reward(self,is_collision,breakstop):
         if is_collision == 1:
             print("collision!")
-            return -30
+            return -30 + self.nowDistance/5
+        elif is_collision == 2:
+            print("overtime")
+            return -30 + self.nowDistance/5
         elif is_collision == 100:
             print("arrive!")
-            return 500
+            return 50 + self.nowDistance/5
         else:
             self.nowDistance = traci.vehicle.getDistance(self.AgentId)
             del_distance = self.nowDistance - self.oldDistance
-            reward = float(del_distance-8)/2.0
+            reward = float(del_distance-8)/200.0
             self.oldDistance = self.nowDistance
             if breakstop == 1:
                 reward -= 1

@@ -70,7 +70,7 @@ for i_episode in range(1000000):
         ep_r += r
 
         if (bt.EPSILON < 0.95):
-            bt.EPSILON += 0.00001
+            bt.EPSILON += 0.00003
         if (bt.MEMORY_COUNTER > bt.MEMORY_CAPACITY):
             bt.learn()
             if is_done:
