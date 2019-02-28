@@ -77,7 +77,7 @@ for i_episode in range(1000000):
                 print("Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON)
         if is_done:
             logger.info("collecting! ------Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON)
-            print("collecting! ------Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON)
+            print("collecting! ------Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON, "|Memory", bt.MEMORY_COUNTER)
             if i_episode % 200 == 0:
-                bt.saver.save(bt.sess, './model/my-model.ckpt', global_step=i_episode)
+                bt.saver.save(bt.sess, '/home/jkwang/PycharmProjects/crowding/model/my-model.ckpt', global_step=i_episode)
             break

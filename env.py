@@ -39,6 +39,7 @@ class TrafficEnv(object):
         self.VehicleState = [0,0,0]
         self.RoadState = [0 for i in range(9)]
         self.state = None
+        self.LeaderList = set()
 
         #property to simulate
         self.end_x = 0
@@ -55,39 +56,44 @@ class TrafficEnv(object):
         self.steptime = 0
 
     def reset(self):
-        self.end = 0
-        self.TotalReward = 0
-        self.oldDistance = 0
-        self.nowDistance = 0
-        self.lastdistance = 0.99
-        self.x_v = 0
-        self.y_v = 0
-        self.is_in = 0
-        self.steptime = 0
+        try:
+            self.end = 0
+            self.TotalReward = 0
+            self.oldDistance = 0
+            self.nowDistance = 0
+            self.lastdistance = 0.99
+            self.x_v = 0
+            self.y_v = 0
+            self.is_in = 0
+            self.steptime = 0
+            self.LeaderList = set()
 
-        change_trip.change()
+            change_trip.change()
+            traci.load(["-c",config_path,"--collision.action","remove","--no-step-log","--no-warnings","--no-duration-log"])
 
-        traci.load(["-c",config_path,"--collision.action","remove","--no-step-log","--no-warnings","--no-duration-log"])
-        print("Resetting...")
-        #traci.vehicle.add("agent", "agent_route")
-        #traci.gui.trackVehicle('View #0', "agent")
+            print("Resetting...")
+            #traci.vehicle.add("agent", "agent_route")
+            #traci.gui.trackVehicle('View #0', "agent")
 
-        traci.simulationStep()
-        AgentAvailable = False
-        while AgentAvailable == False:
             traci.simulationStep()
-            self.VehicleIds = traci.vehicle.getIDList()
-            if self.AgentId in self.VehicleIds:
-                AgentAvailable = True
-                self.StartTime = traci.simulation.getCurrentTime()
-        for vehId in self.VehicleIds:
-            traci.vehicle.subscribe(vehId,(tc.VAR_SPEED,tc.VAR_POSITION,tc.VAR_LANE_INDEX,tc.VAR_DISTANCE))
-            traci.vehicle.subscribeLeader(self.AgentId,50)
-            if vehId == self.AgentId:
-                traci.vehicle.setSpeedMode(self.AgentId,0)
-                traci.vehicle.setLaneChangeMode(self.AgentId,0)
-        self.state,breakstop= self.perception()
-
+            AgentAvailable = False
+            while AgentAvailable == False:
+                traci.simulationStep()
+                self.VehicleIds = traci.vehicle.getIDList()
+                if self.AgentId in self.VehicleIds:
+                    AgentAvailable = True
+                    self.StartTime = traci.simulation.getCurrentTime()
+            for vehId in self.VehicleIds:
+                traci.vehicle.subscribe(vehId,(tc.VAR_SPEED,tc.VAR_POSITION,tc.VAR_LANE_INDEX,tc.VAR_DISTANCE))
+                traci.vehicle.subscribeLeader(self.AgentId,50)
+                if vehId == self.AgentId:
+                    traci.vehicle.setSpeedMode(self.AgentId,0)
+                    traci.vehicle.setLaneChangeMode(self.AgentId,0)
+            self.state,breakstop,overtake= self.perception()
+        except:
+            traci.start(sumoCmd)
+            print("retrying")
+            self.reset()
         return self.state
 
     def step(self,action):
@@ -151,38 +157,38 @@ class TrafficEnv(object):
                 if math.sqrt((self.end_x-posAutox[0])**2+(self.end_y-posAutox[1])**2)<30:
                     self.end = 100
 
-                self.state,breakstop = self.perception()
-                reward = self.cal_reward(self.end,breakstop)
+                self.state,breakstop,overtake = self.perception()
+                reward = self.cal_reward(self.end,breakstop,overtake)
             elif self.steptime < DEAD_LINE:
                 #self.state = self.perception()
                 self.end = 1
-                reward = self.cal_reward(is_collision=self.end,breakstop=0)
+                reward = self.cal_reward(is_collision=self.end,breakstop=0,overtake=0)
                 DistanceTravelled = 0
             else:
                 self.end = 1
-                reward = self.cal_reward(is_collision=2, breakstop=0)
+                reward = self.cal_reward(is_collision=2, breakstop=0,overtake=0)
                 DistanceTravelled = 0
-
 
         return self.state, reward, self.end, DistanceTravelled
 
-    def cal_reward(self,is_collision,breakstop):
+    def cal_reward(self,is_collision,breakstop,overtake):
         if is_collision == 1:
             print("collision!")
-            return -30 + self.nowDistance/5
+            return -30
         elif is_collision == 2:
             print("overtime")
-            return -30 + self.nowDistance/5
+            return -30
         elif is_collision == 100:
             print("arrive!")
-            return 50 + self.nowDistance/5
+            return 50
         else:
             self.nowDistance = traci.vehicle.getDistance(self.AgentId)
             del_distance = self.nowDistance - self.oldDistance
-            reward = float(del_distance-8)/200.0
+            reward = float(del_distance-8)/8 * self.nowDistance/500 + 5*overtake
+
             self.oldDistance = self.nowDistance
             if breakstop == 1:
-                reward -= 1
+                reward -= 10
 
             return reward
 
@@ -238,9 +244,30 @@ class TrafficEnv(object):
         #RoadState: [leftcan rightcan distance r y g leftava centerava rightava]
         self.RoadState = [1.0 for i in range(9)]
         now_laneindex = 0
+
+        overtake = 0
+        remove_list = []
         for vehId in self.VehicleIds:
             if vehId == self.AgentId:
                 now_laneindex = traci.vehicle.getSubscriptionResults(self.AgentId)[tc.VAR_LANE_INDEX]
+                leaderinfo = traci.vehicle.getLeader(self.AgentId)
+                if leaderinfo != None:
+                    leader = leaderinfo[0]
+                    self.LeaderList.add(leader)
+                    myposition = traci.vehicle.getSubscriptionResults(self.AgentId)[tc.VAR_POSITION][1]
+                    for vehicle in self.LeaderList:
+                        #print(vehicle)
+                        try:
+                            position = traci.vehicle.getSubscriptionResults(vehicle)[tc.VAR_POSITION][1]
+                            if myposition > position:
+                                print("overtaking!")
+                                overtake = 1
+                                remove_list.append(vehicle)
+                        except:
+                            pass
+                            #print("position get failed")
+                    for loser in remove_list:
+                        self.LeaderList.remove(loser)
 
         if now_laneindex == 0:
             self.RoadState = [0,1,1000,0,0,1,0,1,1]
@@ -255,5 +282,6 @@ class TrafficEnv(object):
         else:
             breakstop = 0
 
-        return [self.OccMapState,self.VehicleState,self.RoadState],breakstop
+
+        return [self.OccMapState,self.VehicleState,self.RoadState],breakstop,overtake
 

@@ -1,7 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
-from xml.dom import minidom
 
 def change():
     path = "/home/jkwang/learn_sumo/straight"
@@ -20,7 +19,7 @@ def change():
     write_xml(tree,'/home/jkwang/learn_sumo/straight/straight.rou.xml')
 
 def write_xml(tree,out_path):
-    tree.write(out_path, encoding="utf-8",xml_declaration=True)
+    tree.write(out_path, encoding="utf-8", xml_declaration=True)
 
 def read_xml():
     tree = ET.parse('/home/jkwang/learn_sumo/straight/straight.rou.xml')
