@@ -4,6 +4,7 @@ import random
 import dqn_fc as bt
 import numpy as np
 import logging
+import matplotlib.pyplot as plt
 
 def mask(actions_value):
     print(s_others[3],s_others[4])
@@ -27,6 +28,7 @@ logger.addHandler(handler)
 
 my_env = env.TrafficEnv()
 #bt.saver.restore(bt.sess,"./model/my_light_model/my-model.ckpt-3500")
+reward_list = []
 
 for i_episode in range(1000000):
     # listener()
@@ -78,6 +80,14 @@ for i_episode in range(1000000):
         if is_done:
             logger.info("collecting! ------Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON)
             print("collecting! ------Ep:", i_episode, "|Ep_r:", round(ep_r, 2), "|Epsilon", bt.EPSILON, "|Memory", bt.MEMORY_COUNTER)
+            reward_list.append(ep_r)
             if i_episode % 200 == 0:
                 bt.saver.save(bt.sess, '/home/jkwang/PycharmProjects/crowding/model/my-model.ckpt', global_step=i_episode)
+
+            if i_episode % 1000 == 0:
+                print("in!!!")
+                xx = range(len(reward_list))
+                plt.plot(xx,reward_list,'*')
+                plt.show()
+                plt.pause(10)
             break

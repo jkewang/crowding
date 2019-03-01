@@ -10,7 +10,7 @@ else:
 config_path = "/home/jkwang/learn_sumo/straight/straight.sumo.cfg"
 sumoBinary = "/usr/bin/sumo"
 sumoguiBinary = "/usr/bin/sumo-gui"
-sumoCmd = [sumoBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
+sumoCmd = [sumoguiBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
 
 import traci
 import traci.constants as tc
@@ -122,7 +122,7 @@ class TrafficEnv(object):
         DistanceTravelled = 0
         if self.is_in == 1:
             if action == 0:
-                maxSpeed = 16
+                maxSpeed = 30
                 time = (maxSpeed - (traci.vehicle.getSubscriptionResults(self.AgentId)[tc.VAR_SPEED])) / self.AgentAccRate
                 traci.vehicle.slowDown(self.AgentId, maxSpeed, 100*time)
             elif action == 1:
@@ -270,11 +270,11 @@ class TrafficEnv(object):
                         self.LeaderList.remove(loser)
 
         if now_laneindex == 0:
-            self.RoadState = [0,1,1000,0,0,1,0,1,1]
+            self.RoadState = [0,1,1.000,0,0,1,0,1,1]
         elif now_laneindex == 1:
-            self.RoadState = [1,1,1000,0,0,1,1,1,1]
+            self.RoadState = [1,1,1.000,0,0,1,1,1,1]
         else:
-            self.RoadState = [1,0,1000,0,0,1,1,1,0]
+            self.RoadState = [1,0,1.000,0,0,1,1,1,0]
 
         if self.AgentSpeed <= 1:
             breakstop = 1

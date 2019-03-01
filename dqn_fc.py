@@ -126,7 +126,8 @@ def choose_action(s_sliding, s_others):
         actions_value = sess.run(q, feed_dict={tf_s_sliding: s_sliding, tf_s_others: s_others})[0]
         #action = np.argmax(actions_value)
     else:
-        actions_value = [np.random.rand(),np.random.rand()/2,np.random.rand()/3,np.random.rand()/3,np.random.rand()]
+        #actions_value = [np.random.rand(),np.random.rand()/2,np.random.rand()/3,np.random.rand()/3,np.random.rand()]
+        actions_value = [np.random.rand() for ii in range(5)]
         #action = np.random.randint(0, N_ACTIONS)
     return actions_value
 
