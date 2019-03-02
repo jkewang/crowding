@@ -5,45 +5,38 @@ import ppo
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
-
-def mask(actions_value):
-    print(s_others[3],s_others[4])
-    q_mask = [0, 0, 0, 0, 0]
-    if s_others[3] == 0:
-        q_mask[3] -= 1000
-    if s_others[4] == 0:
-        q_mask[2] -= 1000
-
-    actions_value_mask = [0,0,0,0,0]
-    for i in range(len(actions_value)):
-        actions_value_mask[i] = actions_value[i] + q_mask[i]
-
-    return actions_value_mask
+import naive_controller
 
 my_env = env.TrafficEnv()
-#bt.saver.restore(bt.sess,"./model/my_light_model/my-model.ckpt-3500")
 all_ep_r = []
 myppo = ppo.PPO()
+myNaiveCon = naive_controller.NaiveCon()
+
+#myppo.saver.restore(myppo.sess,"./model/my-model.ckpt-1400")
+epsilon = 0.1
 
 for i_episode in range(1000000):
     # listener()
-    s = my_env.reset()
-    N_others = 12*10
-    s_pre_others = np.zeros((N_others))
-    s_pre_others2 = np.array(s[1]+s[2])
-    #print(s_pre_others2)
-    for i in range(N_others):
-        s_pre_others[i] = s_pre_others2[i%12]
+    s,rawOcc = my_env.reset()
+    s = np.concatenate([s[0], np.reshape(s[1] + s[2], -1)])
 
-    s_sliding, s_others = s[0],s_pre_others
     buffer_s, buffer_a, buffer_r = [], [], []
 
     k = 0
     ep_r = 0
     mydict = ["go","stop","left","right","nothing"]
     while True:
-        a = myppo.choose_action(s)
-        s_, r, done, _ = my_env.step(a)
+
+        ranA = np.random.rand()
+
+        if ranA < epsilon:
+            a = myppo.choose_action(s)
+        else:
+            a = myNaiveCon.gen_action(s,rawOcc)
+
+        s_, r, done, _,rawOcc = my_env.step(a)
+        s_ = np.concatenate([s_[0], np.reshape(s_[1] + s_[2], -1)])
+
         buffer_s.append(s)
         buffer_a.append(a)
         buffer_r.append(r)
@@ -63,18 +56,21 @@ for i_episode in range(1000000):
             myppo.update(bs, ba, br)
 
         k += 1
+        if epsilon < 0.99:
+            epsilon += 0.00003
         if done:
+            if i_episode % 200 == 0:
+                myppo.saver.save(myppo.sess, '/home/jkwang/PycharmProjects/crowding/model/my-model2.ckpt', global_step=i_episode)
+            if i_episode % 200 == 0:
+                print("in!!!")
+                xx = range(len(all_ep_r))
+                plt.plot(xx, all_ep_r, '*')
+                plt.show()
+                plt.pause(10)
             break
 
     if i_episode == 0:
         all_ep_r.append(ep_r)
     else:
         all_ep_r.append(all_ep_r[-1] * 0.9 + ep_r * 0.1)
-    print('Ep: %i' % i_episode,"|Ep_r: %i" % ep_r,)
-    if i_episode % 1000 == 0:
-        print("in!!!")
-        xx = range(len(all_ep_r))
-        plt.plot(xx,all_ep_r,'*')
-        plt.show()
-        plt.pause(10)
-    break
+    print('Ep: %i' % i_episode,"|Ep_r: %i" % ep_r,"|epsilon:",epsilon)

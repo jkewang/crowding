@@ -36,17 +36,17 @@ class PPO(object):
         # actor
         self.pi, pi_params = self._build_anet('pi', trainable=True)
         oldpi, oldpi_params = self._build_anet('oldpi', trainable=False)
-        with tf.variable_scope('sample_action'):
-            self.sample_op = tf.squeeze(self.pi.sample(1), axis=0)       # choosing action
         with tf.variable_scope('update_oldpi'):
             self.update_oldpi_op = [oldp.assign(p) for p, oldp in zip(pi_params, oldpi_params)]
 
-        self.tfa = tf.placeholder(tf.float32, [None, A_DIM], 'action')
+        self.tfa = tf.placeholder(tf.int32, [None, ], 'action')
         self.tfadv = tf.placeholder(tf.float32, [None, 1], 'advantage')
         with tf.variable_scope('loss'):
             with tf.variable_scope('surrogate'):
-                # ratio = tf.exp(pi.log_prob(self.tfa) - oldpi.log_prob(self.tfa))
-                ratio = self.pi.prob(self.tfa) / oldpi.prob(self.tfa)
+                a_indices = tf.stack([tf.range(tf.shape(self.tfa)[0], dtype=tf.int32), self.tfa], axis=1)
+                pi_prob = tf.gather_nd(params=self.pi, indices=a_indices)  # shape=(None, )
+                oldpi_prob = tf.gather_nd(params=oldpi, indices=a_indices)  # shape=(None, )
+                ratio = pi_prob / oldpi_prob
                 surr = ratio * self.tfadv
             if METHOD['name'] == 'kl_pen':
                 self.tflam = tf.placeholder(tf.float32, None, 'lambda')
@@ -64,6 +64,7 @@ class PPO(object):
         tf.summary.FileWriter("log/", self.sess.graph)
 
         self.sess.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver()
 
     def update(self, s, a, r):
         self.sess.run(self.update_oldpi_op)
@@ -84,6 +85,7 @@ class PPO(object):
                 METHOD['lam'] *= 2
             METHOD['lam'] = np.clip(METHOD['lam'], 1e-4, 10)    # sometimes explode, this clipping is my solution
         else:   # clipping method, find this is better (OpenAI's paper)
+            a = np.hstack(a)
             [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in range(A_UPDATE_STEPS)]
 
         # update critic
@@ -98,12 +100,13 @@ class PPO(object):
         params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=name)
         return a_prob, params
 
-    def choose_action(self, s):
-        prob_weights = self.sess.run(self.pi, feed_dict={self.tfs: s[None, :]})
+    def choose_action(self, edit_s):
+        prob_weights = self.sess.run(self.pi, feed_dict={self.tfs: edit_s[None, :]})
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())
         return action
 
-    def get_v(self, s):
-        if s.ndim < 2: s = s[np.newaxis, :]
-        return self.sess.run(self.v, {self.tfs: s})[0, 0]
+    def get_v(self, edit_s):
+        if edit_s.ndim < 2: edit_s = edit_s[np.newaxis, :]
+        return self.sess.run(self.v, {self.tfs: edit_s})[0, 0]
+

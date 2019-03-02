@@ -10,7 +10,7 @@ else:
 config_path = "/home/jkwang/learn_sumo/straight/straight.sumo.cfg"
 sumoBinary = "/usr/bin/sumo"
 sumoguiBinary = "/usr/bin/sumo-gui"
-sumoCmd = [sumoguiBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
+sumoCmd = [sumoBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
 
 import traci
 import traci.constants as tc
@@ -75,6 +75,9 @@ class TrafficEnv(object):
             #traci.vehicle.add("agent", "agent_route")
             #traci.gui.trackVehicle('View #0', "agent")
 
+            self.OccMapState = np.zeros((40, 7))
+            rawOcc = self.OccMapState
+
             traci.simulationStep()
             AgentAvailable = False
             while AgentAvailable == False:
@@ -89,12 +92,12 @@ class TrafficEnv(object):
                 if vehId == self.AgentId:
                     traci.vehicle.setSpeedMode(self.AgentId,0)
                     traci.vehicle.setLaneChangeMode(self.AgentId,0)
-            self.state,breakstop,overtake= self.perception()
+            self.state,breakstop,overtake,rawOcc= self.perception()
         except:
             traci.start(sumoCmd)
             print("retrying")
             self.reset()
-        return self.state
+        return self.state, rawOcc
 
     def step(self,action):
         # define action:
@@ -104,7 +107,7 @@ class TrafficEnv(object):
         #    2    |    change left
         #    3    |    change right
         #    4    |    do nothing
-
+        rawOcc = self.OccMapState
 
         for vehId in self.VehicleIds:
             traci.vehicle.subscribe(vehId,(tc.VAR_SPEED,tc.VAR_POSITION,tc.VAR_LANE_INDEX,tc.VAR_DISTANCE))
@@ -157,7 +160,7 @@ class TrafficEnv(object):
                 if math.sqrt((self.end_x-posAutox[0])**2+(self.end_y-posAutox[1])**2)<30:
                     self.end = 100
 
-                self.state,breakstop,overtake = self.perception()
+                self.state,breakstop,overtake,rawOcc = self.perception()
                 reward = self.cal_reward(self.end,breakstop,overtake)
             elif self.steptime < DEAD_LINE:
                 #self.state = self.perception()
@@ -169,7 +172,7 @@ class TrafficEnv(object):
                 reward = self.cal_reward(is_collision=2, breakstop=0,overtake=0)
                 DistanceTravelled = 0
 
-        return self.state, reward, self.end, DistanceTravelled
+        return self.state, reward, self.end, DistanceTravelled, rawOcc
 
     def cal_reward(self,is_collision,breakstop,overtake):
         if is_collision == 1:
@@ -215,7 +218,7 @@ class TrafficEnv(object):
                 self.AgentAngle = (VehicleParam[tc.VAR_ANGLE]/180)*math.pi
                 self.AgentX = VehicleParam[tc.VAR_POSITION][0]
                 self.AgentY = VehicleParam[tc.VAR_POSITION][1]
-        self.VehicleState = [self.AgentSpeed,math.cos(self.AgentAngle),math.sin(self.AgentAngle)]
+        self.VehicleState = [self.AgentSpeed/20,math.cos(self.AgentAngle),math.sin(self.AgentAngle)]
 
         #---------------------to calculate the occupanied state-----------------------
         LOW_X_BOUND = -6
@@ -223,6 +226,8 @@ class TrafficEnv(object):
         LOW_Y_BOUND = -18
         HIGH_Y_BOUND = 60
         self.OccMapState = np.zeros((40, 7))
+        raw_OccMapState = self.OccMapState
+
         for VehicleParam in AllVehicleParams:
             VehiclePos = VehicleParam[tc.VAR_POSITION]
             rol = math.sqrt((VehiclePos[0]-self.AgentX)**2+(VehiclePos[1]-self.AgentY)**2)
@@ -236,7 +241,7 @@ class TrafficEnv(object):
                 indexY = int((60 - relY)/2 + 0.5)
 
                 self.OccMapState[indexY,indexX] = 1.0
-
+                raw_OccMapState = self.OccMapState
             #add for fc dqn
         self.OccMapState = self.OccMapState.reshape(-1)
 
@@ -272,7 +277,7 @@ class TrafficEnv(object):
         if now_laneindex == 0:
             self.RoadState = [0,1,1.000,0,0,1,0,1,1]
         elif now_laneindex == 1:
-            self.RoadState = [1,1,1.000,0,0,1,1,1,1]
+            self.RoadState = [0,0,1.000,0,0,1,1,1,1]
         else:
             self.RoadState = [1,0,1.000,0,0,1,1,1,0]
 
@@ -283,5 +288,5 @@ class TrafficEnv(object):
             breakstop = 0
 
 
-        return [self.OccMapState,self.VehicleState,self.RoadState],breakstop,overtake
+        return [self.OccMapState,self.VehicleState,self.RoadState],breakstop,overtake,raw_OccMapState
 
