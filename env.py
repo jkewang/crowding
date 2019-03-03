@@ -10,7 +10,7 @@ else:
 config_path = "/home/jkwang/learn_sumo/straight/straight.sumo.cfg"
 sumoBinary = "/usr/bin/sumo"
 sumoguiBinary = "/usr/bin/sumo-gui"
-sumoCmd = [sumoBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
+sumoCmd = [sumoguiBinary,"-c",config_path,"--collision.action","remove","--start","--no-step-log","--no-warnings","--no-duration-log"]
 
 import traci
 import traci.constants as tc
@@ -183,15 +183,15 @@ class TrafficEnv(object):
             return -30
         elif is_collision == 100:
             print("arrive!")
-            return 50
+            return 30
         else:
             self.nowDistance = traci.vehicle.getDistance(self.AgentId)
             del_distance = self.nowDistance - self.oldDistance
-            reward = float(del_distance-8)/8 * self.nowDistance/500 + 5*overtake
+            reward = float(del_distance-8)/4 * self.nowDistance/500 + 5*overtake
 
             self.oldDistance = self.nowDistance
             if breakstop == 1:
-                reward -= 10
+                reward -= 5
 
             return reward
 

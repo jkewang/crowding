@@ -9,12 +9,15 @@ import naive_controller
 
 my_env = env.TrafficEnv()
 all_ep_r = []
+all_aloss = []
+all_closs = []
+
 myppo = ppo.PPO()
 myNaiveCon = naive_controller.NaiveCon()
 
-#myppo.saver.restore(myppo.sess,"./model/my-model.ckpt-1400")
+myppo.restore_para()
 epsilon = 0.1
-
+train_num = 0
 for i_episode in range(1000000):
     # listener()
     s,rawOcc = my_env.reset()
@@ -29,7 +32,7 @@ for i_episode in range(1000000):
 
         ranA = np.random.rand()
 
-        if ranA < epsilon:
+        if ranA < 1:
             a = myppo.choose_action(s)
         else:
             a = myNaiveCon.gen_action(s,rawOcc)
@@ -44,7 +47,10 @@ for i_episode in range(1000000):
         ep_r += r
 
         if (k + 1) % ppo.BATCH == 0 or done:
-            v_s_ = myppo.get_v(s_)
+            if done:
+                v_s_ = 0
+            else:
+                v_s_ = myppo.get_v(s_)
             discounted_r = []
             for r in buffer_r[::-1]:
                 v_s_ = r + ppo.GAMMA * v_s_
@@ -54,7 +60,6 @@ for i_episode in range(1000000):
             bs, ba, br = np.vstack(buffer_s), np.vstack(buffer_a), np.array(discounted_r)[:, np.newaxis]
             buffer_s, buffer_a, buffer_r = [], [], []
             myppo.update(bs, ba, br)
-
         k += 1
         if epsilon < 0.99:
             epsilon += 0.00003
@@ -69,8 +74,11 @@ for i_episode in range(1000000):
                 plt.pause(10)
             break
 
+
+
     if i_episode == 0:
         all_ep_r.append(ep_r)
     else:
         all_ep_r.append(all_ep_r[-1] * 0.9 + ep_r * 0.1)
+
     print('Ep: %i' % i_episode,"|Ep_r: %i" % ep_r,"|epsilon:",epsilon)
