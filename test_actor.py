@@ -128,6 +128,7 @@ for i_episode in range(1000000):
     s = np.concatenate([s[0], np.reshape(s[1] + s[2], -1)])
 
     while True:
+        #s[280] = np.random.rand()
         a = PA.choose_action(s)
         #a = myNaiveCon.gen_action(s,rawOcc)
 

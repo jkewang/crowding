@@ -21,9 +21,9 @@ class PretrainActor(object):
         self.s = []
         self.action = []
 
-        self.a,self.a2 = self.build_actor()
+        self.a, self.a2 = self.build_actor()
         self.loss = tf.reduce_mean(tf.reduce_sum(tf.squared_difference(self.a, self.tf_a), axis=1))
-        self.loss2 = tf.reduce_mean(tf.reduce_sum(tf.squared_difference(self.a2, self.tf_a),axis=1))
+        self.loss2 = tf.reduce_mean(tf.reduce_sum(tf.squared_difference(self.a2, self.tf_a), axis=1))
         self.train1 = tf.train.AdamOptimizer(self.LR).minimize(self.loss)
         self.train2 = tf.train.AdamOptimizer(self.LR).minimize(self.loss2)
         self.sess.run(tf.global_variables_initializer())
@@ -46,8 +46,7 @@ class PretrainActor(object):
                     state_i.append(float(item))
 
             if len(state_i) == 292:
-                state_i[280] = np.random.rand()
-                #state_i = random()
+                #state_i[280] = np.random.rand()
                 self.s.append(state_i)
 
             read_action = single[-1]
@@ -66,7 +65,18 @@ class PretrainActor(object):
             except:
                 pass
 
-        print(len(self.s),len(self.action))
+        add_action = []
+        add_state = []
+        for index in range(len(self.action)):
+            if self.action[index][2] == 1 or self.action[index][3] == 1:
+                for i in range(100):
+                    add_action.append(self.action[index])
+                    add_state.append(self.s[index])
+
+        self.action.extend(add_action)
+        self.s.extend(add_state)
+
+        print(len(self.s), len(self.action))
 
     def build_actor(self):
         with tf.variable_scope("pi"):
@@ -82,7 +92,6 @@ class PretrainActor(object):
         return a_prob,a_prob2
 
     def learn(self):
-        self.learning_step += 1
         s,a = self.read_batch()
         self.sess.run(self.train1,{self.tf_s:s,self.tf_a:a})
         self.sess.run(self.train2,{self.tf_s:s,self.tf_a:a})
@@ -91,6 +100,7 @@ class PretrainActor(object):
             print("loss2 = ",self.sess.run(self.loss2,{self.tf_s:s,self.tf_a:a}))
             #print(self.sess.run(self.a,{self.tf_s:s}))
             #print(a)
+        self.learning_step += 1
 
     def read_batch(self):
         s_list = []
@@ -113,7 +123,7 @@ class PretrainActor(object):
 
 PA = PretrainActor()
 PA.read_data()
-for i in range(10000000):
+for i in range(1000000):
     PA.learn()
-    if i == 9999999:
+    if i == 999999:
         PA.save()

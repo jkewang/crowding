@@ -32,7 +32,7 @@ for i_episode in range(1000000):
 
         ranA = np.random.rand()
 
-        if ranA < 1:
+        if ranA < 0:
             a = myppo.choose_action(s)
         else:
             a = myNaiveCon.gen_action(s,rawOcc)
