@@ -8,7 +8,7 @@ A_LR = 0.0001
 C_LR = 0.0002
 BATCH = 32
 A_UPDATE_STEPS = 10
-C_UPDATE_STEPS = 10
+C_UPDATE_STEPS = 1000
 S_DIM, A_DIM = 292, 5
 
 METHOD = [
@@ -65,7 +65,7 @@ class PPO(object):
     def update(self, s, a, r):
         self.sess.run(self.update_oldpi_op)
         adv = self.sess.run(self.advantage, {self.tfs: s, self.tfdc_r: r})
-        adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
+        #adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
         # update actor
         a = np.hstack(a)
         [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in range(A_UPDATE_STEPS)]

@@ -32,7 +32,7 @@ for i_episode in range(1000000):
 
         ranA = np.random.rand()
 
-        if ranA < 0:
+        if ranA < 1:
             a = myppo.choose_action(s)
         else:
             a = myNaiveCon.gen_action(s,rawOcc)
@@ -73,8 +73,6 @@ for i_episode in range(1000000):
                 plt.show()
                 plt.pause(10)
             break
-
-
 
     if i_episode == 0:
         all_ep_r.append(ep_r)
