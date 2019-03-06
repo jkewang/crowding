@@ -9,7 +9,7 @@ import naive_controller
 
 my_env = env.TrafficEnv()
 myNaiveCon = naive_controller.NaiveCon()
-f1 = open('data.txt','w')
+f1 = open('data_dqn.txt','w')
 
 for i_episode in range(1000):
     # listener()
@@ -26,14 +26,19 @@ for i_episode in range(1000):
         s_, r, done, _,rawOcc = my_env.step(a)
         s_ = np.concatenate([s_[0], np.reshape(s_[1] + s_[2], -1)])
 
-        s = s_
-
         k += 1
         f1.write(str(s))
         f1.write("\n")
         f1.write(str(a))
+        f1.write("\n")
+        f1.write(str(s_))
+        f1.write("\n")
+        f1.write(str(r))
+        f1.write("\n")
+        f1.write(str(done))
         f1.write("#\n")
 
+        s = s_
         if done:
             break
 

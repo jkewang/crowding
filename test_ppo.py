@@ -12,7 +12,7 @@ my_env = env.TrafficEnv()
 all_ep_r = []
 myppo = ppo.PPO()
 
-myppo.saver.restore(myppo.sess,"./model/my-model2.ckpt-4200")
+myppo.saver.restore(myppo.sess,"./model/my-model2.ckpt-2000")
 myNaiveCon = naive_controller.NaiveCon()
 
 for i_episode in range(1000000):

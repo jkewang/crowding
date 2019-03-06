@@ -6,9 +6,9 @@ import tensorflow as tf
 GAMMA = 0.9
 A_LR = 0.0001
 C_LR = 0.0002
-BATCH = 32
+BATCH = 128
 A_UPDATE_STEPS = 10
-C_UPDATE_STEPS = 1000
+C_UPDATE_STEPS = 10
 S_DIM, A_DIM = 292, 5
 
 METHOD = [

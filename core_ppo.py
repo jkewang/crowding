@@ -77,6 +77,7 @@ for i_episode in range(1000000):
     if i_episode == 0:
         all_ep_r.append(ep_r)
     else:
-        all_ep_r.append(all_ep_r[-1] * 0.9 + ep_r * 0.1)
+        #all_ep_r.append(all_ep_r[-1] * 0.9 + ep_r * 0.1)
+        all_ep_r.append(ep_r)
 
     print('Ep: %i' % i_episode,"|Ep_r: %i" % ep_r,"|epsilon:",epsilon)

@@ -177,13 +177,13 @@ class TrafficEnv(object):
     def cal_reward(self,is_collision,breakstop,overtake):
         if is_collision == 1:
             print("collision!")
-            return -30
+            return -100
         elif is_collision == 2:
             print("overtime")
-            return -30
+            return -100
         elif is_collision == 100:
             print("arrive!")
-            return 30
+            return 100
         else:
             self.nowDistance = traci.vehicle.getDistance(self.AgentId)
             del_distance = self.nowDistance - self.oldDistance
@@ -276,10 +276,11 @@ class TrafficEnv(object):
 
         if now_laneindex == 0:
             self.RoadState = [0,1,1.000,0,0,1,0,1,1]
-        elif now_laneindex == 1:
-            self.RoadState = [0,0,1.000,0,0,1,1,1,1]
-        else:
+        elif now_laneindex == 2:
             self.RoadState = [1,0,1.000,0,0,1,1,1,0]
+        else:
+            self.RoadState = [0, 0, 1.000, 0, 0, 1, 1, 1, 1]
+
 
         if self.AgentSpeed <= 1:
             breakstop = 1
