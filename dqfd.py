@@ -6,7 +6,7 @@ import math
 class DQFD(object):
     def __init__(self):
         #hyper params
-        self.LR = 1e-3
+        self.LR = 0.0001
         self.GAMMA = 0.9
         self.BATCH_SIZE = 32
         self.train_num = 0
@@ -88,14 +88,14 @@ class DQFD(object):
         with tf.variable_scope(name):
             l1 = tf.layers.dense(self.tf_s, 100, tf.nn.relu, trainable=trainable)
             l2 = tf.layers.dense(l1, 100, tf.nn.relu, trainable=trainable)
-            l3 = tf.layers.dense(l2, 1, trainable=trainable)
+            l3 = tf.layers.dense(l2, self.N_Action, trainable=trainable)
             return l3
 
     def build_Qnext_net(self, name, trainable):
         with tf.variable_scope(name):
             l1 = tf.layers.dense(self.tf_s_, 100, tf.nn.relu, trainable=trainable)
             l2 = tf.layers.dense(l1, 100, tf.nn.relu, trainable=trainable)
-            l3 = tf.layers.dense(l2, 1, trainable=trainable)
+            l3 = tf.layers.dense(l2, self.N_Action, trainable=trainable)
             return l3
 
     def learn(self):
@@ -108,15 +108,17 @@ class DQFD(object):
         s_list, a_list, snext_list, r_list, done_list = self.read_batch()
 
         self.q_target = []
-        self.q_eval = []
-        a_indices = tf.stack([tf.range(tf.shape(self.tf_a)[0], dtype=tf.int32), self.tf_a], axis=1)
-        self.q_eval = tf.gather_nd(params=self.q, indices=a_indices)
+
         all_q_next = self.q_next.eval(session=self.sess, feed_dict={self.tf_s_: snext_list})
+
         for i in range(self.BATCH_SIZE):
             if done_list[i] == 0:
                 self.q_target.append(r_list[i] + self.GAMMA * np.max(all_q_next[i]))
             else:
                 self.q_target.append(r_list[i])
+
+        #print(all_q_next)
+        print(self.q_target)
 
         self.sess.run(self.train_op,
             {self.tf_s:s_list,self.tf_r:r_list, self.tf_s_:snext_list,
